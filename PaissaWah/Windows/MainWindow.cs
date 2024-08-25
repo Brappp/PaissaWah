@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
+using PaissaWah.Models;
+using PaissaWah.Data;
+using PaissaWah.Handlers;
 
 namespace PaissaWah.Windows
 {
@@ -24,10 +27,14 @@ namespace PaissaWah.Windows
         private bool isOwned = false;
         private string selectedHouseSize = "Any";
         private bool isInLotto = false;
-
         private bool allWardsSelected = false;
+
+        private WorldSelectionSection worldSelectionSection;
+        private DistrictSelectionSection districtSelectionSection;
+        private PlotSettingsSection plotSettingsSection;
+
         private string statusMessage = "Ready";
-        private List<CsvManager.HousingData> queryResults = new List<CsvManager.HousingData>();
+        private List<HousingData> queryResults = new List<HousingData>();
         private bool isDownloadInProgress = false;
         private int autoDownloadIntervalHours;
         private bool showSeeResultsMessage = false;
@@ -37,9 +44,9 @@ namespace PaissaWah.Windows
             : base("PaissaWah##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
         {
             this.plugin = plugin;
-            chatGui = Plugin.ChatGui;  // Accessing ChatGui as a static member
+            chatGui = Plugin.ChatGui;
             csvManager = plugin.CsvManager;
-            lifestreamIpcHandler = plugin.LifestreamIpcHandler; // Use LifestreamIpcHandler
+            lifestreamIpcHandler = plugin.LifestreamIpcHandler;
 
             saveFilePath = Path.Combine(csvManager.GetCsvDirectoryPath(), "results.csv");
 
@@ -49,11 +56,16 @@ namespace PaissaWah.Windows
 
             autoDownloadIntervalHours = csvManager.AutoDownloadIntervalHours;
             Task.Run(() => csvManager.DownloadLatestCsv());
+
+            worldSelectionSection = new WorldSelectionSection(selectedWorlds);
+            districtSelectionSection = new DistrictSelectionSection(selectedDistricts);
+            plotSettingsSection = new PlotSettingsSection(selectedWard, days, selectedHouseSize, isOwned, isInLotto, allWardsSelected);
         }
 
         private void LoadWorldsAndDistricts()
         {
-            var datacenters = GetWorldsByDatacenter();
+            selectedWorlds.Clear();
+            var datacenters = WorldData.GetWorldsByDatacenter();
             foreach (var dc in datacenters)
             {
                 foreach (var world in dc.Value)
@@ -62,6 +74,7 @@ namespace PaissaWah.Windows
                 }
             }
 
+            selectedDistricts.Clear();
             var districts = GetDistricts();
             foreach (var district in districts)
             {
@@ -107,6 +120,9 @@ namespace PaissaWah.Windows
             var colorAccent = new Vector4(0.1f, 0.6f, 0.8f, 1.0f);
             var colorSectionBackground = new Vector4(0.15f, 0.15f, 0.15f, 1.0f);
             var colorGreen = new Vector4(0.0f, 1.0f, 0.0f, 1.0f);
+            var colorButton = new Vector4(0.1f, 0.6f, 0.8f, 1.0f);
+            var colorButtonHovered = new Vector4(0.1f, 0.8f, 1.0f, 1.0f);
+            var colorButtonActive = new Vector4(0.0f, 0.5f, 0.7f, 1.0f);
 
             ImGui.PushStyleColor(ImGuiCol.Text, colorAccent);
             ImGui.Text("Instructions:");
@@ -117,167 +133,12 @@ namespace PaissaWah.Windows
                               "3. Click 'Execute Query' to get results.");
             ImGui.Separator();
 
-            ImGui.TextColored(colorAccent, "CSV Download:");
-            ImGui.SameLine();
-            if (ImGui.Button("Download CSV"))
-            {
-                Task.Run(() => csvManager.DownloadLatestCsv(true));
-            }
-            ImGui.SameLine();
-
-            if (isDownloadInProgress)
-            {
-                ImGui.TextColored(new Vector4(1.0f, 1.0f, 0.0f, 1.0f), "Download In Progress...");
-            }
-            else if (statusMessage.Equals("Ready", StringComparison.OrdinalIgnoreCase))
-            {
-                ImGui.TextColored(colorGreen, "Ready ✔");
-            }
-            else
-            {
-                ImGui.TextColored(new Vector4(1.0f, 0.0f, 0.0f, 1.0f), statusMessage);
-            }
-
             ImGui.Separator();
 
-            ImGui.Text("Auto-Download Interval (Hours):");
-            ImGui.InputInt("Interval (Hours)", ref autoDownloadIntervalHours);
-            if (ImGui.Button("Set Interval"))
-            {
-                csvManager.AutoDownloadIntervalHours = autoDownloadIntervalHours;
-            }
-
-            ImGui.Separator();
-
-            ImGui.TextWrapped("The auto-download feature allows the plugin to automatically download the latest CSV data at the specified interval. " +
-                              "The interval is checked every hour, and if the specified number of hours has passed since the last download, a new download will be triggered automatically.");
-            ImGui.TextWrapped("For example, if you set the interval to 2 hours, the plugin will attempt to download the latest CSV data every 2 hours.");
-
-            ImGui.Separator();
-
-            ImGui.Text($"Last Download: {csvManager.LastDownloadTime:g} UTC");
-
-            ImGui.Separator();
-
-            ImGui.PushStyleColor(ImGuiCol.ChildBg, colorSectionBackground);
-            ImGui.BeginChild("WorldSelectionSection", new Vector2(0, 300), true);
-            ImGui.PushStyleColor(ImGuiCol.Text, colorAccent);
-            ImGui.Text("Select Worlds");
-            ImGui.PopStyleColor();
-            ImGui.Separator();
-
-            var datacenters = GetWorldsByDatacenter();
-            foreach (var dc in datacenters)
-            {
-                ImGui.BeginGroup();
-                ImGui.TextColored(colorAccent, dc.Key);
-                foreach (var world in dc.Value)
-                {
-                    bool selected = selectedWorlds[world];
-                    if (ImGui.Checkbox(world, ref selected))
-                    {
-                        selectedWorlds[world] = selected;
-                    }
-                }
-                ImGui.EndGroup();
-                ImGui.SameLine();
-            }
-            ImGui.EndChild();
-            ImGui.PopStyleColor();
-
-            ImGui.Separator();
-
-            ImGui.PushStyleColor(ImGuiCol.ChildBg, colorSectionBackground);
-            ImGui.BeginChild("DistrictSelectionSection", new Vector2(0, 80), true);
-            ImGui.PushStyleColor(ImGuiCol.Text, colorAccent);
-            ImGui.Text("Select Districts");
-            ImGui.PopStyleColor();
-            ImGui.Separator();
-
-            bool first = true;
-            foreach (var district in GetDistricts())
-            {
-                if (!first)
-                {
-                    ImGui.SameLine();
-                }
-                first = false;
-
-                bool selected = selectedDistricts[district];
-                if (ImGui.Checkbox(district, ref selected))
-                {
-                    selectedDistricts[district] = selected;
-                }
-            }
-            ImGui.EndChild();
-            ImGui.PopStyleColor();
-
-            ImGui.Separator();
-
-            ImGui.PushStyleColor(ImGuiCol.ChildBg, colorSectionBackground);
-            ImGui.BeginChild("CombinedSettingsSection", new Vector2(0, 380), true);
-            ImGui.PushStyleColor(ImGuiCol.Text, colorAccent);
-            ImGui.Text("Plot Settings");
-            ImGui.PopStyleColor();
-            ImGui.Separator();
-
-            ImGui.Checkbox("All Wards", ref allWardsSelected);
-
-            ImGui.Text("Select Ward:");
-            ImGui.TextWrapped("Choose the ward number (1-30) to narrow down your search to a specific ward.");
-            ImGui.BeginDisabled(allWardsSelected);
-            ImGui.SliderInt("Ward Number", ref selectedWard, 1, 30);
-            ImGui.EndDisabled();
-
-            ImGui.Separator();
-
-            ImGui.Text("Days:");
-            ImGui.TextWrapped("Specify how many days back you want to include in your search.");
-            ImGui.InputInt("Number of Days", ref days);
-
-            ImGui.Separator();
-
-            ImGui.Text("House Size:");
-            ImGui.TextWrapped("Filter the search results by house size (SMALL, MEDIUM, LARGE).");
-            if (ImGui.BeginCombo("House Size", selectedHouseSize))
-            {
-                foreach (var size in new[] { "Any", "SMALL", "MEDIUM", "LARGE" })
-                {
-                    bool isSelected = (size == selectedHouseSize);
-                    if (ImGui.Selectable(size, isSelected))
-                    {
-                        selectedHouseSize = size;
-                    }
-                    if (isSelected)
-                    {
-                        ImGui.SetItemDefaultFocus();
-                    }
-                }
-                ImGui.EndCombo();
-            }
-
-            ImGui.Separator();
-
-            ImGui.Text("Ownership:");
-            ImGui.TextWrapped("Check this box if you only want to see plots that are currently owned.");
-            ImGui.Checkbox("Owned", ref isOwned);
-
-            ImGui.Separator();
-
-            ImGui.Text("Is in Lotto:");
-            ImGui.TextWrapped("Check this box to only include plots that are currently in the lotto phase.");
-            ImGui.Checkbox("In Lotto", ref isInLotto);
-
-            ImGui.Separator();
-
-            ImGui.EndChild();
-            ImGui.PopStyleColor();
-
-            ImGui.Separator();
-
-            ImGui.PushStyleColor(ImGuiCol.Button, colorAccent);
-            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.1f, 0.8f, 1.0f, 1.0f));
-            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.0f, 0.5f, 0.7f, 1.0f));
+            // Execute Query Button
+            ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
             if (ImGui.Button("Execute Query", new Vector2(200, 40)))
             {
                 try
@@ -302,17 +163,87 @@ namespace PaissaWah.Windows
             }
             ImGui.PopStyleColor(3);
 
-            ImGui.Separator();
-
             if (showSeeResultsMessage)
             {
+                ImGui.SameLine();
                 ImGui.TextColored(new Vector4(1.0f, 0.5f, 0.0f, 1.0f), "Query executed. Please check the 'Results' tab for details.");
             }
+
+            ImGui.Separator();
+
+            ImGui.Separator();
+
+            ImGui.Text($"Last Download: {csvManager.LastDownloadTime:g} UTC");
+
+            ImGui.TextColored(colorAccent, "CSV Download:");
+            ImGui.SameLine();
+
+            ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
+            if (ImGui.Button("Download CSV"))
+            {
+                Task.Run(() => csvManager.DownloadLatestCsv(true));
+            }
+            ImGui.PopStyleColor(3);
+
+            ImGui.SameLine();
+
+            if (isDownloadInProgress)
+            {
+                ImGui.TextColored(new Vector4(1.0f, 1.0f, 0.0f, 1.0f), "Download In Progress...");
+            }
+            else if (statusMessage.Equals("Ready", StringComparison.OrdinalIgnoreCase))
+            {
+                ImGui.TextColored(colorGreen, "Ready ✔");
+            }
+            else
+            {
+                ImGui.TextColored(new Vector4(1.0f, 0.0f, 0.0f, 1.0f), statusMessage);
+            }
+
+            ImGui.Separator();
+
+            ImGui.Text("Auto-Download Interval (Hours):");
+            ImGui.TextWrapped("Controls how often we check for a new housing csv.");
+
+            ImGui.InputInt("Interval (Hours)", ref autoDownloadIntervalHours);
+
+            ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
+            if (ImGui.Button("Set Interval"))
+            {
+                csvManager.AutoDownloadIntervalHours = autoDownloadIntervalHours;
+            }
+            ImGui.PopStyleColor(3);
+
+            ImGui.Separator();
+
+            ImGui.Separator();
+
+            ImGui.Separator();
+
+            worldSelectionSection.Draw();
+
+            ImGui.Separator();
+
+            districtSelectionSection.Draw();
+
+            ImGui.Separator();
+
+            plotSettingsSection.Draw();
+
+            ImGui.Separator();
         }
 
         private void DrawResultsTab()
         {
             var colorAccent = new Vector4(0.1f, 0.6f, 0.8f, 1.0f);
+            var colorButton = new Vector4(0.1f, 0.6f, 0.8f, 1.0f);
+            var colorButtonHovered = new Vector4(0.1f, 0.8f, 1.0f, 1.0f);
+            var colorButtonActive = new Vector4(0.0f, 0.5f, 0.7f, 1.0f);
+
             ImGui.TextColored(colorAccent, "Query Results:");
 
             if (queryResults.Any())
@@ -320,6 +251,9 @@ namespace PaissaWah.Windows
                 ImGui.Text("Export Results to CSV:");
                 ImGui.InputText("Save File Path", ref saveFilePath, 512);
 
+                ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
                 if (ImGui.Button("Export to CSV"))
                 {
                     if (SaveResultsToCsv(saveFilePath))
@@ -327,6 +261,7 @@ namespace PaissaWah.Windows
                         chatGui.Print($"Results successfully saved to {saveFilePath}.");
                     }
                 }
+                ImGui.PopStyleColor(3);
 
                 ImGui.Separator();
 
@@ -390,6 +325,9 @@ namespace PaissaWah.Windows
 
                         // Travel Button
                         ImGui.TableNextColumn();
+                        ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
+                        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
+                        ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
                         if (ImGui.Button($"Travel##{result.Id}"))
                         {
                             var commandArgs = $"{result.World}, {result.District}, w{result.WardNumber} p{result.PlotNumber}";
@@ -402,6 +340,7 @@ namespace PaissaWah.Windows
                                 chatGui.PrintError($"Error invoking Lifestream teleport: {ex.Message}");
                             }
                         }
+                        ImGui.PopStyleColor(3);
                     }
 
                     ImGui.EndTable();
@@ -438,25 +377,9 @@ namespace PaissaWah.Windows
             }
         }
 
-        private Dictionary<string, List<string>> GetWorldsByDatacenter()
-        {
-            return new Dictionary<string, List<string>>()
-            {
-                { "Aether", new List<string> { "Adamantoise", "Cactuar", "Faerie", "Gilgamesh", "Jenova", "Midgardsormr", "Sargatanas", "Siren" }},
-                { "Primal", new List<string> { "Behemoth", "Excalibur", "Exodus", "Famfrit", "Hyperion", "Lamia", "Leviathan", "Ultros" }},
-                { "Crystal", new List<string> { "Balmung", "Brynhildr", "Coeurl", "Diabolos", "Goblin", "Malboro", "Mateus", "Zalera" }},
-                { "Chaos", new List<string> { "Cerberus", "Louisoix", "Moogle", "Omega", "Ragnarok", "Spriggan" }},
-                { "Light", new List<string> { "Lich", "Odin", "Phoenix", "Shiva", "Twintania", "Zodiark" }},
-                { "Elemental", new List<string> { "Aegis", "Atomos", "Carbuncle", "Garuda", "Gungnir", "Kujata", "Ramuh", "Tonberry", "Typhon", "Unicorn" }},
-                { "Gaia", new List<string> { "Alexander", "Bahamut", "Durandal", "Fenrir", "Ifrit", "Ridill", "Tiamat", "Ultima", "Valefor", "Yojimbo", "Zeromus" }},
-                { "Mana", new List<string> { "Anima", "Asura", "Chocobo", "Hades", "Ixion", "Mandragora", "Masamune", "Pandaemonium", "Shinryu", "Titan" }},
-                { "Materia", new List<string> { "Bismarck", "Ravana", "Sephirot", "Sophia", "Zurvan" }},
-            };
-        }
-
         private string GetDatacenter(string world)
         {
-            foreach (var dc in GetWorldsByDatacenter())
+            foreach (var dc in WorldData.GetWorldsByDatacenter())
             {
                 if (dc.Value.Contains(world))
                 {

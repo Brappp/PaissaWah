@@ -1,3 +1,5 @@
+using PaissaWah.Configuration;
+using PaissaWah.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -9,19 +11,19 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
 
-namespace PaissaWah
+namespace PaissaWah.Handlers
 {
     public class CsvManager
     {
         private readonly string csvUrl = "https://paissadb.zhu.codes/csv/dump";
         private readonly string csvDirectoryPath;
         private readonly string csvFilePath;
-        private readonly Configuration configuration; // Reference to the configuration
+        private readonly PaissaWah.Configuration.Configuration configuration;  
         public DateTime LastDownloadTime { get; private set; } = DateTime.MinValue;
 
         public event Action<string>? StatusUpdated;
 
-        public CsvManager(Configuration config, string customCsvDirectoryPath)
+        public CsvManager(PaissaWah.Configuration.Configuration config, string customCsvDirectoryPath)
         {
             configuration = config;
 
@@ -49,7 +51,7 @@ namespace PaissaWah
             set
             {
                 configuration.DownloadIntervalHours = value;
-                configuration.Save(); // Save the updated value to the config
+                configuration.Save(); 
             }
         }
 
@@ -126,72 +128,6 @@ namespace PaissaWah
                 StatusUpdated?.Invoke($"Error querying CSV data: {ex.Message}");
                 return Enumerable.Empty<HousingData>();
             }
-        }
-
-        public class HousingData
-        {
-            public int Id { get; set; }
-            public string World { get; set; } = string.Empty;
-            public string District { get; set; } = string.Empty;
-            public int WardNumber { get; set; }
-            public int PlotNumber { get; set; }
-            public string HouseSize { get; set; } = string.Empty;
-            public string LottoEntries { get; set; } = string.Empty;
-            public string Price { get; set; } = string.Empty;
-
-            public long FirstSeenEpoch { get; set; }
-            public long LastSeenEpoch { get; set; }
-            public long? LottoPhaseUntilEpoch { get; set; }
-
-            public bool IsOwned { get; set; }
-            public string LottoPhase { get; set; } = string.Empty;
-
-            public DateTime FirstSeen => DateTimeOffset.FromUnixTimeSeconds(FirstSeenEpoch).DateTime;
-            public DateTime LastSeen => DateTimeOffset.FromUnixTimeSeconds(LastSeenEpoch).DateTime;
-            public DateTime? LottoPhaseUntil => LottoPhaseUntilEpoch.HasValue ? (DateTime?)DateTimeOffset.FromUnixTimeSeconds(LottoPhaseUntilEpoch.Value).DateTime : null;
-        }
-
-        public sealed class HousingDataMap : ClassMap<HousingData>
-        {
-            public HousingDataMap()
-            {
-                Map(m => m.Id).Name("id");
-                Map(m => m.World).Name("world");
-                Map(m => m.District).Name("district");
-                Map(m => m.WardNumber).Name("ward_number");
-                Map(m => m.PlotNumber).Name("plot_number");
-                Map(m => m.HouseSize).Name("house_size");
-                Map(m => m.LottoEntries).Name("lotto_entries");
-                Map(m => m.Price).Name("price");
-                Map(m => m.FirstSeenEpoch).Name("first_seen").TypeConverter<EpochTimeConverter>();
-                Map(m => m.LastSeenEpoch).Name("last_seen").TypeConverter<EpochTimeConverter>();
-                Map(m => m.LottoPhaseUntilEpoch).Name("lotto_phase_until").TypeConverter<EpochTimeConverter>().TypeConverterOption.NullValues(string.Empty);
-                Map(m => m.IsOwned).Name("is_owned");
-                Map(m => m.LottoPhase).Name("lotto_phase");
-            }
-        }
-    }
-
-    public class EpochTimeConverter : DefaultTypeConverter
-    {
-        public override object ConvertFromString(string text, IReaderRow row, MemberMapData memberMapData)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return null;
-            }
-
-            if (text.Contains('.'))
-            {
-                text = text.Split('.')[0];
-            }
-
-            if (long.TryParse(text, out long epochTime))
-            {
-                return epochTime;
-            }
-
-            throw new TypeConverterException(this, memberMapData, text, row.Context, $"Unable to convert '{text}' to {typeof(long)}.");
         }
     }
 }

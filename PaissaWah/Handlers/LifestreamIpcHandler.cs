@@ -1,7 +1,7 @@
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 
-namespace PaissaWah
+namespace PaissaWah.Handlers
 {
     public class LifestreamIpcHandler
     {

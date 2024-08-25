@@ -1,10 +1,11 @@
-// Updated Plugin.cs
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.IoC;
 using System.IO;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
+using PaissaWah.Configuration;  
+using PaissaWah.Handlers;
 using PaissaWah.Windows;
 using System;
 
@@ -17,29 +18,24 @@ namespace PaissaWah
         [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
         [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
 
-        private const string CommandName = "/pmycommand";
+        private const string CommandName = "/PaissaWah";
 
-        public Configuration Configuration { get; init; }
+        public PaissaWah.Configuration.Configuration Configuration { get; init; }  
         public CsvManager CsvManager { get; private set; }
         public LifestreamIpcHandler LifestreamIpcHandler { get; private set; }
 
         public readonly WindowSystem WindowSystem = new("PaissaWah");
-        private ConfigWindow ConfigWindow { get; init; }
+        private ConfigWindow ConfigWindow { get; init; } 
         private MainWindow MainWindow { get; init; }
 
         public Plugin()
         {
-            Configuration = Configuration.Load();
-
-            var configDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XIVLauncher", "pluginConfigs", "PaissaWah");
-            CsvManager = new CsvManager(Configuration, configDirectory);
-
+            Configuration = PaissaWah.Configuration.Configuration.Load();  
+            CsvManager = new CsvManager(Configuration, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XIVLauncher", "pluginConfigs", "PaissaWah"));
             LifestreamIpcHandler = new LifestreamIpcHandler(PluginInterface);
 
-            var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
-
             ConfigWindow = new ConfigWindow(this);
-            MainWindow = new MainWindow(this, goatImagePath);
+            MainWindow = new MainWindow(this, Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png"));
 
             WindowSystem.AddWindow(ConfigWindow);
             WindowSystem.AddWindow(MainWindow);
@@ -57,10 +53,8 @@ namespace PaissaWah
         public void Dispose()
         {
             WindowSystem.RemoveAllWindows();
-
             ConfigWindow.Dispose();
             MainWindow.Dispose();
-
             CommandManager.RemoveHandler(CommandName);
         }
 

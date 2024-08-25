@@ -4,14 +4,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Dalamud.Configuration;
 
-namespace PaissaWah
+namespace PaissaWah.Configuration
 {
     [Serializable]
     public class Configuration : IPluginConfiguration
     {
         public int Version { get; set; } = 0;
 
-        // Configuration setting for auto download interval in hours
+        // auto download
         public int DownloadIntervalHours { get; set; } = 24;
 
         [JsonIgnore]
@@ -22,7 +22,7 @@ namespace PaissaWah
 
         public Configuration() { }
 
-        // Method to save the configuration to the default path
+        // save the configuration to the default path
         public void Save()
         {
             var jsonOptions = new JsonSerializerOptions
@@ -34,7 +34,7 @@ namespace PaissaWah
             File.WriteAllText(ConfigFilePath, jsonString);
         }
 
-        // Method to load the configuration from the default path
+        // load the configuration from the default path
         public static Configuration Load()
         {
             if (File.Exists(ConfigFilePath))
