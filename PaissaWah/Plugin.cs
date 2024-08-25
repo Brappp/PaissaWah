@@ -8,6 +8,7 @@ using PaissaWah.Configuration;
 using PaissaWah.Handlers;
 using PaissaWah.Windows;
 using System;
+using ImGuiNET;
 
 namespace PaissaWah
 {
@@ -42,7 +43,7 @@ namespace PaissaWah
 
             CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "A useful message to display in /xlhelp"
+                HelpMessage = "Config"
             });
 
             PluginInterface.UiBuilder.Draw += DrawUI;
