@@ -1,10 +1,12 @@
 {
-  "Author": "wah",
-  "Name": "PaissaWah",
-  "Punchline": "PassiaDB Search",
-  "Description": "LifeStream must be installed to travel!",
-  "ApplicableVersion": "any",
-  "Tags": [
-    "wah"
-  ]
+    "Author": "wah",
+    "Name": "PaissaWah",
+    "Description": "PassiaDB Search",
+    "Punchline": "LifeStream must be installed to travel!",
+    "InternalName": "PaissaWah",
+    "AssemblyVersion": "1.0.0.2",
+    "RepoUrl": "https://github.com/Brappp/PaissaWah",
+    "ApplicableVersion": "any",
+    "Tags": [ "wah" ],
+    "DalamudApiLevel": 10
 }

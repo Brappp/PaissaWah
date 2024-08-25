@@ -97,6 +97,9 @@ namespace PaissaWah.Windows
         {
             ImGui.SetWindowSize(new Vector2(1200, 900), ImGuiCond.FirstUseEver);
 
+            // Begin scrollable area for the entire window content
+            ImGui.BeginChild("MainScrollableArea", new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y), true, ImGuiWindowFlags.AlwaysVerticalScrollbar);
+
             if (ImGui.BeginTabBar("MainTabs"))
             {
                 if (ImGui.BeginTabItem("Settings"))
@@ -113,6 +116,8 @@ namespace PaissaWah.Windows
 
                 ImGui.EndTabBar();
             }
+
+            ImGui.EndChild(); // End of scrollable area
         }
 
         private void DrawSettingsTab()

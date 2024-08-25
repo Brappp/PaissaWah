@@ -15,27 +15,30 @@ namespace PaissaWah.Windows
 
         public void Draw()
         {
-            ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.15f, 0.15f, 0.15f, 1.0f));
-            ImGui.BeginChild("DistrictSelectionSection", new Vector2(ImGui.GetContentRegionAvail().X, 70), false); 
-            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.1f, 0.6f, 0.8f, 1.0f));
-            ImGui.Text("Select Districts");
-            ImGui.PopStyleColor();
-            ImGui.Separator();
-
-            foreach (var district in GetDistricts())
+            if (ImGui.CollapsingHeader("Select Districts"))
             {
-                bool selected = selectedDistricts[district];
-                ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0.2f, 0.2f, 0.2f, 1.0f)); 
-                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 5); 
-                if (ImGui.Checkbox(district, ref selected))
-                {
-                    selectedDistricts[district] = selected;
-                }
+                ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.15f, 0.15f, 0.15f, 1.0f));
+                ImGui.BeginChild("DistrictSelectionSection", new Vector2(ImGui.GetContentRegionAvail().X, 100), false, ImGuiWindowFlags.AlwaysVerticalScrollbar);
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.1f, 0.6f, 0.8f, 1.0f));
+                ImGui.Text("Select Districts");
                 ImGui.PopStyleColor();
-                ImGui.SameLine();
+                ImGui.Separator();
+
+                foreach (var district in GetDistricts())
+                {
+                    bool selected = selectedDistricts[district];
+                    ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0.2f, 0.2f, 0.2f, 1.0f));
+                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 5);
+                    if (ImGui.Checkbox(district, ref selected))
+                    {
+                        selectedDistricts[district] = selected;
+                    }
+                    ImGui.PopStyleColor();
+                    ImGui.SameLine();
+                }
+                ImGui.EndChild();
+                ImGui.PopStyleColor();
             }
-            ImGui.EndChild();
-            ImGui.PopStyleColor();
         }
 
         private List<string> GetDistricts()
