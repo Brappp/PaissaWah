@@ -9,12 +9,12 @@ namespace PaissaWah.Configuration
     {
         private Configuration Configuration;
 
-        public ConfigWindow(Plugin plugin) : base("A Wonderful Configuration Window###With a constant ID")
+        public ConfigWindow(Plugin plugin) : base("Auto-Download Interval###With a constant ID")
         {
             Flags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
                     ImGuiWindowFlags.NoScrollWithMouse;
 
-            Size = new Vector2(232, 90); 
+            Size = new Vector2(232, 120);
             SizeCondition = ImGuiCond.Always;
 
             Configuration = plugin.Configuration;
