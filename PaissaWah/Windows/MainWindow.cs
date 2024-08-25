@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
-using Dalamud.Interface.Internal;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
@@ -18,6 +15,7 @@ namespace PaissaWah.Windows
         private readonly Plugin plugin;
         private readonly CsvManager csvManager;
         private readonly IChatGui chatGui;
+        private readonly LifestreamIpcHandler lifestreamIpcHandler;
 
         private Dictionary<string, bool> selectedWorlds = new Dictionary<string, bool>();
         private Dictionary<string, bool> selectedDistricts = new Dictionary<string, bool>();
@@ -39,8 +37,9 @@ namespace PaissaWah.Windows
             : base("PaissaWah##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
         {
             this.plugin = plugin;
-            chatGui = Plugin.ChatGui;
+            chatGui = Plugin.ChatGui;  // Accessing ChatGui as a static member
             csvManager = plugin.CsvManager;
+            lifestreamIpcHandler = plugin.LifestreamIpcHandler; // Use LifestreamIpcHandler
 
             saveFilePath = Path.Combine(csvManager.GetCsvDirectoryPath(), "results.csv");
 
@@ -293,12 +292,6 @@ namespace PaissaWah.Windows
                     queryResults = results;
                     showSeeResultsMessage = true;
 
-                    foreach (var result in results)
-                    {
-                        chatGui.Print($"Datacenter: {GetDatacenter(result.World)}, World: {result.World}, District: {result.District}, Ward: {(allWardsSelected ? "All" : result.WardNumber.ToString())}, Plot: {result.PlotNumber}, " +
-                                      $"Size: {result.HouseSize}, Price: {result.Price}, Owned: {result.IsOwned}, Last Seen: {result.LastSeen:yyyy-MM-dd HH:mm:ss}");
-                    }
-
                     OnStatusUpdated("Ready");
                 }
                 catch (Exception ex)
@@ -399,13 +392,16 @@ namespace PaissaWah.Windows
                         ImGui.TableNextColumn();
                         if (ImGui.Button($"Travel##{result.Id}"))
                         {
-                            // Construct the travel command
-                            var travelCommand = $"li {result.World}, {result.District}, w{result.WardNumber} p{result.PlotNumber}";
-
-                            // Send the command to the chat
-                            chatGui.Print($"/{travelCommand}"); // Send the command to the chat for the user to execute
+                            var commandArgs = $"{result.World}, {result.District}, w{result.WardNumber} p{result.PlotNumber}";
+                            try
+                            {
+                                lifestreamIpcHandler.ExecuteLiCommand(commandArgs);
+                            }
+                            catch (Exception ex)
+                            {
+                                chatGui.PrintError($"Error invoking Lifestream teleport: {ex.Message}");
+                            }
                         }
-
                     }
 
                     ImGui.EndTable();
