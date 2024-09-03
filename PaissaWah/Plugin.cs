@@ -32,7 +32,7 @@ namespace PaissaWah
             CsvManager = new CsvManager(Configuration, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XIVLauncher", "pluginConfigs", "PaissaWah"));
             LifestreamIpcHandler = new LifestreamIpcHandler(PluginInterface);
 
-            MainWindow = new MainWindow(this, Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png"));
+            MainWindow = new MainWindow(this, Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "wah.png"));
 
             WindowSystem.AddWindow(MainWindow);
 
