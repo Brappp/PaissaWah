@@ -19,7 +19,8 @@ namespace PaissaWah.Windows
             if (ImGui.CollapsingHeader("Select Worlds"))
             {
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.15f, 0.15f, 0.15f, 1.0f));
-                ImGui.BeginChild("WorldSelectionSection", new Vector2(ImGui.GetContentRegionAvail().X, 200), false, ImGuiWindowFlags.AlwaysVerticalScrollbar);
+
+                ImGui.BeginChild("WorldSelectionSection", new Vector2(ImGui.GetContentRegionAvail().X, 275), false);
                 ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.1f, 0.6f, 0.8f, 1.0f));
                 ImGui.Text("Select Worlds");
                 ImGui.PopStyleColor();
@@ -44,7 +45,8 @@ namespace PaissaWah.Windows
                     ImGui.EndGroup();
                     ImGui.SameLine();
                 }
-                ImGui.EndChild();
+
+                ImGui.EndChild(); 
                 ImGui.PopStyleColor();
             }
         }

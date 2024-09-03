@@ -17,7 +17,6 @@ namespace PaissaWah.Data
                 // EU
                 { "Chaos", new List<string> { "Cerberus", "Louisoix", "Moogle", "Omega", "Phantom", "Ragnarok","Sagittarius","Spriggan" }},
                 { "Light", new List<string> { "Alpha", "Lich", "Odin", "Phoenix", "Raiden", "Shiva", "Twintania", "Zodiark" }},
-                { "Shadow", new List<string> { "Innocence", "Pixie", "Titania", "Tycoon" }},
 
                 //JP
                 { "Elemental", new List<string> { "Aegis", "Atomos", "Carbuncle", "Garuda", "Gungnir", "Kujata", "Tonberry", "Typhon" }},

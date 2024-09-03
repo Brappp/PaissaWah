@@ -11,7 +11,6 @@ namespace PaissaWah.Configuration
     {
         public int Version { get; set; } = 0;
 
-        // auto download
         public int DownloadIntervalHours { get; set; } = 24;
 
         [JsonIgnore]
@@ -22,7 +21,6 @@ namespace PaissaWah.Configuration
 
         public Configuration() { }
 
-        // save the configuration to the default path
         public void Save()
         {
             var jsonOptions = new JsonSerializerOptions
@@ -34,7 +32,6 @@ namespace PaissaWah.Configuration
             File.WriteAllText(ConfigFilePath, jsonString);
         }
 
-        // load the configuration from the default path
         public static Configuration Load()
         {
             if (File.Exists(ConfigFilePath))

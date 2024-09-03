@@ -18,7 +18,7 @@ namespace PaissaWah.Handlers
         private readonly string csvUrl = "https://paissadb.zhu.codes/csv/dump";
         private readonly string csvDirectoryPath;
         private readonly string csvFilePath;
-        private readonly PaissaWah.Configuration.Configuration configuration;  
+        private readonly PaissaWah.Configuration.Configuration configuration;
         public DateTime LastDownloadTime { get; private set; } = DateTime.MinValue;
 
         public event Action<string>? StatusUpdated;
@@ -27,7 +27,6 @@ namespace PaissaWah.Handlers
         {
             configuration = config;
 
-            // Ensure the directory exists; create it if it doesn't
             if (!Directory.Exists(customCsvDirectoryPath))
             {
                 Directory.CreateDirectory(customCsvDirectoryPath);
@@ -36,7 +35,6 @@ namespace PaissaWah.Handlers
             csvDirectoryPath = customCsvDirectoryPath;
             csvFilePath = Path.Combine(csvDirectoryPath, "housing.csv");
 
-            // Initialize settings from the configuration
             AutoDownloadIntervalHours = config.DownloadIntervalHours;
         }
 
@@ -51,7 +49,7 @@ namespace PaissaWah.Handlers
             set
             {
                 configuration.DownloadIntervalHours = value;
-                configuration.Save(); 
+                configuration.Save();
             }
         }
 
@@ -90,7 +88,7 @@ namespace PaissaWah.Handlers
             }
         }
 
-        public IEnumerable<HousingData> QueryHousingData(List<string> selectedWorlds, List<string> selectedDistricts, int selectedWard, int days, bool isOwned, string houseSize)
+        public IEnumerable<HousingData> QueryHousingData(List<string> selectedWorlds, List<string> selectedDistricts)
         {
             if (!File.Exists(csvFilePath))
             {
@@ -115,10 +113,8 @@ namespace PaissaWah.Handlers
                     .Where(h =>
                         selectedWorlds.Contains(h.World) &&
                         selectedDistricts.Contains(h.District) &&
-                        h.WardNumber <= selectedWard &&
-                        h.IsOwned == isOwned &&
-                        h.LastSeen >= DateTime.UtcNow.AddDays(-days) &&
-                        (houseSize == "Any" || h.HouseSize.Equals(houseSize, StringComparison.OrdinalIgnoreCase)))
+                        h.LottoPhaseUntil.HasValue &&  // Ensure it has a LottoPhaseUntil date
+                        h.LottoPhaseUntil.Value.Date >= DateTime.UtcNow.Date) // Only show if LottoPhaseUntil is today or later
                     .ToList();
 
                 return results;

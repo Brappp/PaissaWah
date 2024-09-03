@@ -18,7 +18,8 @@ namespace PaissaWah.Windows
             if (ImGui.CollapsingHeader("Select Districts"))
             {
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.15f, 0.15f, 0.15f, 1.0f));
-                ImGui.BeginChild("DistrictSelectionSection", new Vector2(ImGui.GetContentRegionAvail().X, 100), false, ImGuiWindowFlags.AlwaysVerticalScrollbar);
+
+                ImGui.BeginChild("DistrictSelectionSection", new Vector2(ImGui.GetContentRegionAvail().X, 60), false);
                 ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.1f, 0.6f, 0.8f, 1.0f));
                 ImGui.Text("Select Districts");
                 ImGui.PopStyleColor();
@@ -36,7 +37,8 @@ namespace PaissaWah.Windows
                     ImGui.PopStyleColor();
                     ImGui.SameLine();
                 }
-                ImGui.EndChild();
+
+                ImGui.EndChild(); 
                 ImGui.PopStyleColor();
             }
         }

@@ -4,11 +4,9 @@ using Dalamud.IoC;
 using System.IO;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
-using PaissaWah.Configuration;  
 using PaissaWah.Handlers;
 using PaissaWah.Windows;
 using System;
-using ImGuiNET;
 
 namespace PaissaWah
 {
@@ -21,24 +19,21 @@ namespace PaissaWah
 
         private const string CommandName = "/PaissaWah";
 
-        public PaissaWah.Configuration.Configuration Configuration { get; init; }  
+        public PaissaWah.Configuration.Configuration Configuration { get; init; }
         public CsvManager CsvManager { get; private set; }
         public LifestreamIpcHandler LifestreamIpcHandler { get; private set; }
 
         public readonly WindowSystem WindowSystem = new("PaissaWah");
-        private ConfigWindow ConfigWindow { get; init; } 
         private MainWindow MainWindow { get; init; }
 
         public Plugin()
         {
-            Configuration = PaissaWah.Configuration.Configuration.Load();  
+            Configuration = PaissaWah.Configuration.Configuration.Load();
             CsvManager = new CsvManager(Configuration, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XIVLauncher", "pluginConfigs", "PaissaWah"));
             LifestreamIpcHandler = new LifestreamIpcHandler(PluginInterface);
 
-            ConfigWindow = new ConfigWindow(this);
             MainWindow = new MainWindow(this, Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png"));
 
-            WindowSystem.AddWindow(ConfigWindow);
             WindowSystem.AddWindow(MainWindow);
 
             CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
@@ -47,14 +42,12 @@ namespace PaissaWah
             });
 
             PluginInterface.UiBuilder.Draw += DrawUI;
-            PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
             PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
         }
 
         public void Dispose()
         {
             WindowSystem.RemoveAllWindows();
-            ConfigWindow.Dispose();
             MainWindow.Dispose();
             CommandManager.RemoveHandler(CommandName);
         }
@@ -66,7 +59,6 @@ namespace PaissaWah
 
         private void DrawUI() => WindowSystem.Draw();
 
-        public void ToggleConfigUI() => ConfigWindow.Toggle();
         public void ToggleMainUI() => MainWindow.Toggle();
     }
 }

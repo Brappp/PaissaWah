@@ -22,16 +22,10 @@ namespace PaissaWah.Windows
 
         private Dictionary<string, bool> selectedWorlds = new Dictionary<string, bool>();
         private Dictionary<string, bool> selectedDistricts = new Dictionary<string, bool>();
-        private int selectedWard = 1;
-        private int days = 30;
-        private bool isOwned = false;
-        private string selectedHouseSize = "Any";
-        private bool isInLotto = false;
-        private bool allWardsSelected = false;
+        private bool isInLotto = true;
 
         private WorldSelectionSection worldSelectionSection;
         private DistrictSelectionSection districtSelectionSection;
-        private PlotSettingsSection plotSettingsSection;
 
         private string statusMessage = "Ready";
         private List<HousingData> queryResults = new List<HousingData>();
@@ -59,7 +53,6 @@ namespace PaissaWah.Windows
 
             worldSelectionSection = new WorldSelectionSection(selectedWorlds);
             districtSelectionSection = new DistrictSelectionSection(selectedDistricts);
-            plotSettingsSection = new PlotSettingsSection(selectedWard, days, selectedHouseSize, isOwned, isInLotto, allWardsSelected);
         }
 
         private void LoadWorldsAndDistricts()
@@ -97,8 +90,7 @@ namespace PaissaWah.Windows
         {
             ImGui.SetWindowSize(new Vector2(1200, 900), ImGuiCond.FirstUseEver);
 
-            // Begin scrollable area for the entire window content
-            ImGui.BeginChild("MainScrollableArea", new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y), true, ImGuiWindowFlags.AlwaysVerticalScrollbar);
+            ImGui.BeginChild("MainScrollableArea", new Vector2(0, 0), true, ImGuiWindowFlags.AlwaysVerticalScrollbar);
 
             if (ImGui.BeginTabBar("MainTabs"))
             {
@@ -117,14 +109,12 @@ namespace PaissaWah.Windows
                 ImGui.EndTabBar();
             }
 
-            ImGui.EndChild(); // End of scrollable area
+            ImGui.EndChild(); 
         }
 
         private void DrawSettingsTab()
         {
             var colorAccent = new Vector4(0.1f, 0.6f, 0.8f, 1.0f);
-            var colorSectionBackground = new Vector4(0.15f, 0.15f, 0.15f, 1.0f);
-            var colorGreen = new Vector4(0.0f, 1.0f, 0.0f, 1.0f);
             var colorButton = new Vector4(0.1f, 0.6f, 0.8f, 1.0f);
             var colorButtonHovered = new Vector4(0.1f, 0.8f, 1.0f, 1.0f);
             var colorButtonActive = new Vector4(0.0f, 0.5f, 0.7f, 1.0f);
@@ -140,19 +130,21 @@ namespace PaissaWah.Windows
 
             ImGui.Separator();
 
-            // Execute Query Button
             ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
             ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
             ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
-            if (ImGui.Button("Execute Query", new Vector2(200, 40)))
+            if (ImGui.Button("Execute Query", new Vector2(100, 30)))
             {
                 try
                 {
                     var selectedWorldsList = selectedWorlds.Where(w => w.Value).Select(w => w.Key).ToList();
                     var selectedDistrictsList = selectedDistricts.Where(d => d.Value).Select(d => d.Key).ToList();
 
-                    var results = csvManager.QueryHousingData(selectedWorldsList, selectedDistrictsList, allWardsSelected ? 30 : selectedWard, days, isOwned, selectedHouseSize)
-                                            .Where(r => !isInLotto || r.LottoPhaseUntil.HasValue)
+                    var results = csvManager.QueryHousingData(selectedWorldsList, selectedDistrictsList)
+                                            .OrderBy(r => GetDatacenter(r.World))
+                                            .ThenBy(r => r.World)
+                                            .ThenBy(r => r.District)
+                                            .ThenBy(r => r.HouseSize)
                                             .ToList();
 
                     queryResults = results;
@@ -186,7 +178,7 @@ namespace PaissaWah.Windows
             ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
             ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
             ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
-            if (ImGui.Button("Download CSV"))
+            if (ImGui.Button("Download CSV", new Vector2(100, 30)))
             {
                 Task.Run(() => csvManager.DownloadLatestCsv(true));
             }
@@ -200,7 +192,7 @@ namespace PaissaWah.Windows
             }
             else if (statusMessage.Equals("Ready", StringComparison.OrdinalIgnoreCase))
             {
-                ImGui.TextColored(colorGreen, "Ready ✔");
+                ImGui.TextColored(new Vector4(0.0f, 1.0f, 0.0f, 1.0f), "Ready ✔");
             }
             else
             {
@@ -217,13 +209,11 @@ namespace PaissaWah.Windows
             ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
             ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
             ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
-            if (ImGui.Button("Set Interval"))
+            if (ImGui.Button("Set Interval", new Vector2(100, 30)))
             {
                 csvManager.AutoDownloadIntervalHours = autoDownloadIntervalHours;
             }
             ImGui.PopStyleColor(3);
-
-            ImGui.Separator();
 
             ImGui.Separator();
 
@@ -234,10 +224,6 @@ namespace PaissaWah.Windows
             ImGui.Separator();
 
             districtSelectionSection.Draw();
-
-            ImGui.Separator();
-
-            plotSettingsSection.Draw();
 
             ImGui.Separator();
         }
@@ -259,7 +245,7 @@ namespace PaissaWah.Windows
                 ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
                 ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
                 ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
-                if (ImGui.Button("Export to CSV"))
+                if (ImGui.Button("Export to CSV", new Vector2(100, 30)))
                 {
                     if (SaveResultsToCsv(saveFilePath))
                     {
@@ -271,7 +257,7 @@ namespace PaissaWah.Windows
                 ImGui.Separator();
 
                 ImGui.BeginChild("Results", new Vector2(0, 600), true);
-                if (ImGui.BeginTable("ResultsTable", 13, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable))
+                if (ImGui.BeginTable("ResultsTable", 14, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable))
                 {
                     ImGui.TableSetupColumn("ID", ImGuiTableColumnFlags.NoHide);
                     ImGui.TableSetupColumn("Datacenter");
@@ -285,6 +271,7 @@ namespace PaissaWah.Windows
                     ImGui.TableSetupColumn("Last Seen");
                     ImGui.TableSetupColumn("Lotto Phase Until");
                     ImGui.TableSetupColumn("Is in Lotto");
+                    ImGui.TableSetupColumn("Plot Type");
                     ImGui.TableSetupColumn("Travel");
                     ImGui.TableHeadersRow();
 
@@ -328,12 +315,14 @@ namespace PaissaWah.Windows
                         ImGui.TableNextColumn();
                         ImGui.Text(result.LottoPhaseUntil.HasValue ? "Yes" : "No");
 
-                        // Travel Button
+                        ImGui.TableNextColumn();
+                        ImGui.Text(WardMapper.GetWardType(result.WardNumber));
+
                         ImGui.TableNextColumn();
                         ImGui.PushStyleColor(ImGuiCol.Button, colorButton);
                         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colorButtonHovered);
                         ImGui.PushStyleColor(ImGuiCol.ButtonActive, colorButtonActive);
-                        if (ImGui.Button($"Travel##{result.Id}"))
+                        if (ImGui.Button($"Travel##{result.Id}", new Vector2(100, 30)))
                         {
                             var commandArgs = $"{result.World}, {result.District}, w{result.WardNumber} p{result.PlotNumber}";
                             try
@@ -364,11 +353,11 @@ namespace PaissaWah.Windows
             {
                 using (var writer = new StreamWriter(filePath))
                 {
-                    writer.WriteLine("ID,Datacenter,World,District,Ward,Plot,Size,Price,Is Owned,Last Seen,Lotto Phase Until");
+                    writer.WriteLine("ID,Datacenter,World,District,Ward,Plot,Size,Price,Is Owned,Last Seen,Lotto Phase Until,Plot Type");
 
                     foreach (var result in queryResults)
                     {
-                        var line = $"{result.Id},{GetDatacenter(result.World)},{result.World},{result.District},{result.WardNumber},{result.PlotNumber},{result.HouseSize},{result.Price},{result.IsOwned},{result.LastSeen:yyyy-MM-dd HH:mm:ss},{result.LottoPhaseUntil?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"}";
+                        var line = $"{result.Id},{GetDatacenter(result.World)},{result.World},{result.District},{result.WardNumber},{result.PlotNumber},{result.HouseSize},{result.Price},{result.IsOwned},{result.LastSeen:yyyy-MM-dd HH:mm:ss},{result.LottoPhaseUntil?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"},{WardMapper.GetWardType(result.WardNumber)}";
                         writer.WriteLine(line);
                     }
                 }
