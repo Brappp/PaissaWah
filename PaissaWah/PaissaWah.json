@@ -4,9 +4,9 @@
     "Description": "PassiaDB Search",
     "Punchline": "LifeStream must be installed to travel!",
     "InternalName": "PaissaWah",
-    "AssemblyVersion": "1.0.0.3",
+    "AssemblyVersion": "1.0.0.15",
     "RepoUrl": "https://github.com/Brappp/PaissaWah",
     "ApplicableVersion": "any",
     "Tags": [ "wah" ],
-    "DalamudApiLevel": 10
+    "DalamudApiLevel": 11
 }
